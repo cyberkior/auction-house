@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { rateLimit, getRateLimitIdentifier } from "@/lib/rate-limit/limiter";
+import { handleApiError } from "@/lib/errors/handler";
+import {
+  NotFoundError,
+  AuthorizationError,
+  ValidationError,
+} from "@/lib/errors/classes";
+import { validateBody } from "@/lib/validation/middleware";
+import { createAuctionSchema } from "@/lib/validation/schemas";
 
 // GET /api/auctions - List auctions with search and filtering
 export async function GET(request: NextRequest) {
   try {
+    await rateLimit(getRateLimitIdentifier(request), "lenient");
+
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get("status");
     const limit = parseInt(searchParams.get("limit") || "20");
@@ -139,18 +150,18 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ auctions: auctionsWithBids });
   } catch (error) {
-    console.error("Error fetching auctions:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
 // POST /api/auctions - Create auction
 export async function POST(request: NextRequest) {
   try {
+    await rateLimit(getRateLimitIdentifier(request), "moderate");
+
     const body = await request.json();
+    const validatedData = validateBody(createAuctionSchema, body);
+
     const {
       walletAddress,
       title,
@@ -161,54 +172,7 @@ export async function POST(request: NextRequest) {
       minBidIncrement,
       startTime,
       endTime,
-    } = body;
-
-    // Validation
-    if (!walletAddress || !title || !description || !imageUrl) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    if (title.length < 3 || title.length > 100) {
-      return NextResponse.json(
-        { error: "Title must be 3-100 characters" },
-        { status: 400 }
-      );
-    }
-
-    if (minBidIncrement <= 0) {
-      return NextResponse.json(
-        { error: "Min bid increment must be positive" },
-        { status: 400 }
-      );
-    }
-
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const now = new Date();
-
-    if (start <= now) {
-      return NextResponse.json(
-        { error: "Start time must be in the future" },
-        { status: 400 }
-      );
-    }
-
-    if (end <= start) {
-      return NextResponse.json(
-        { error: "End time must be after start time" },
-        { status: 400 }
-      );
-    }
-
-    if (end.getTime() - start.getTime() < 60 * 60 * 1000) {
-      return NextResponse.json(
-        { error: "Auction must be at least 1 hour" },
-        { status: 400 }
-      );
-    }
+    } = validatedData;
 
     const supabase = createServerClient();
 
@@ -220,17 +184,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("User");
     }
 
     if (user.is_restricted) {
-      return NextResponse.json(
-        { error: "User is restricted from creating auctions" },
-        { status: 403 }
-      );
+      throw new AuthorizationError("User is restricted from creating auctions");
     }
 
     // Create auction
@@ -268,10 +226,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ auction }, { status: 201 });
   } catch (error) {
-    console.error("Error creating auction:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

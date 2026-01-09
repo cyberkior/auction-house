@@ -1,32 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import type { ReportCategory } from "@/types";
+import { rateLimit, getRateLimitIdentifier } from "@/lib/rate-limit/limiter";
+import { handleApiError } from "@/lib/errors/handler";
+import { NotFoundError, ValidationError } from "@/lib/errors/classes";
+import { validateBody } from "@/lib/validation/middleware";
+import { reportSchema } from "@/lib/validation/schemas";
 
 // POST /api/reports - Submit a report
 export async function POST(request: NextRequest) {
   try {
+    await rateLimit(getRateLimitIdentifier(request), "moderate");
+
     const body = await request.json();
-    const { walletAddress, auctionId, category, description } = body;
-
-    if (!walletAddress || !auctionId || !category) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    const validCategories: ReportCategory[] = [
-      "nsfw",
-      "scam",
-      "stolen",
-      "harassment",
-    ];
-    if (!validCategories.includes(category)) {
-      return NextResponse.json(
-        { error: "Invalid category" },
-        { status: 400 }
-      );
-    }
+    const { walletAddress, auctionId, category, description } = validateBody(
+      reportSchema,
+      body
+    );
 
     const supabase = createServerClient();
 
@@ -38,10 +28,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("User");
     }
 
     // Verify auction exists
@@ -52,18 +39,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (auctionError || !auction) {
-      return NextResponse.json(
-        { error: "Auction not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("Auction");
     }
 
     // Can't report your own auction
     if (auction.creator_id === user.id) {
-      return NextResponse.json(
-        { error: "Cannot report your own auction" },
-        { status: 400 }
-      );
+      throw new ValidationError("Cannot report your own auction", [
+        { field: "auctionId", message: "Cannot report your own auction" },
+      ]);
     }
 
     // Check if user already reported this auction
@@ -75,10 +58,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingReport) {
-      return NextResponse.json(
-        { error: "You have already reported this auction" },
-        { status: 400 }
-      );
+      throw new ValidationError("You have already reported this auction", [
+        { field: "auctionId", message: "Duplicate report" },
+      ]);
     }
 
     // Create report
@@ -118,10 +100,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ report }, { status: 201 });
   } catch (error) {
-    console.error("Error creating report:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

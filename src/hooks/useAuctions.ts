@@ -85,7 +85,7 @@ export function useAuctions(options: UseAuctionsOptions = {}): UseAuctionsReturn
         setIsLoading(false);
       }
     },
-    [status, trending, limit, offset]
+    [status, trending, limit, offset, query, tags, minPrice, maxPrice, sort]
   );
 
   // Initial fetch and refetch on filter changes

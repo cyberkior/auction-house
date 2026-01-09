@@ -23,11 +23,14 @@
     "@solana/web3.js": "^1.95.4",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.10",
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.36.1",
     "bs58": "^6.0.0",
     "next": "14.2.21",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tweetnacl": "^1.0.3"
+    "tweetnacl": "^1.0.3",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

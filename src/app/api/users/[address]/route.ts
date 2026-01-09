@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { rateLimit, getRateLimitIdentifier } from "@/lib/rate-limit/limiter";
+import { handleApiError } from "@/lib/errors/handler";
+import {
+  NotFoundError,
+  AuthorizationError,
+  ValidationError,
+} from "@/lib/errors/classes";
+import { validateBody } from "@/lib/validation/middleware";
+import { updateUserSchema } from "@/lib/validation/schemas";
 
 // GET /api/users/[address] - Get user profile with stats
 export async function GET(
@@ -7,6 +16,8 @@ export async function GET(
   { params }: { params: { address: string } }
 ) {
   try {
+    await rateLimit(getRateLimitIdentifier(request), "lenient");
+
     const supabase = createServerClient();
 
     // Get user
@@ -92,11 +103,7 @@ export async function GET(
       bids: userBids || [],
     });
   } catch (error) {
-    console.error("Error fetching user:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
@@ -106,15 +113,17 @@ export async function PATCH(
   { params }: { params: { address: string } }
 ) {
   try {
+    await rateLimit(getRateLimitIdentifier(request), "moderate");
+
     const body = await request.json();
-    const { username, avatarUrl, requesterWallet } = body;
+    const { username, avatarUrl, requesterWallet } = validateBody(
+      updateUserSchema,
+      body
+    );
 
     // Verify the requester is the user
     if (requesterWallet !== params.address) {
-      return NextResponse.json(
-        { error: "Not authorized" },
-        { status: 403 }
-      );
+      throw new AuthorizationError("Not authorized to update this profile");
     }
 
     const supabase = createServerClient();
@@ -140,10 +149,6 @@ export async function PATCH(
 
     return NextResponse.json({ user });
   } catch (error) {
-    console.error("Error updating user:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

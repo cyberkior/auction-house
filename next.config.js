@@ -8,13 +8,15 @@ const nextConfig = {
       },
     ],
   },
-  // Allow ngrok and external access
   async headers() {
+    const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3000";
     return [
       {
-        source: "/:path*",
+        source: "/api/:path*",
         headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Origin", value: allowedOrigin },
+          { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, PATCH, DELETE, OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization, x-wallet-address" },
         ],
       },
     ];

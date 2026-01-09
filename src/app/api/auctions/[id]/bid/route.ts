@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { getWalletBalance } from "@/lib/solana/balance";
+import { rateLimit, getRateLimitIdentifier } from "@/lib/rate-limit/limiter";
+import { handleApiError } from "@/lib/errors/handler";
+import {
+  NotFoundError,
+  AuthorizationError,
+  ValidationError,
+} from "@/lib/errors/classes";
+import { validateBody } from "@/lib/validation/middleware";
+import { placeBidSchema } from "@/lib/validation/schemas";
 
 // POST /api/auctions/[id]/bid - Place a bid
 export async function POST(
@@ -8,22 +17,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    await rateLimit(getRateLimitIdentifier(request), "moderate");
+
     const body = await request.json();
-    const { walletAddress, amount } = body;
-
-    if (!walletAddress || !amount) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    if (typeof amount !== "number" || amount <= 0) {
-      return NextResponse.json(
-        { error: "Invalid bid amount" },
-        { status: 400 }
-      );
-    }
+    const { walletAddress, amount } = validateBody(placeBidSchema, body);
 
     const supabase = createServerClient();
 
@@ -38,18 +35,14 @@ export async function POST(
       .single();
 
     if (auctionError || !auction) {
-      return NextResponse.json(
-        { error: "Auction not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("Auction");
     }
 
     // Verify auction is current
     if (auction.status !== "current") {
-      return NextResponse.json(
-        { error: "Auction is not active" },
-        { status: 400 }
-      );
+      throw new ValidationError("Auction is not active", [
+        { field: "auction", message: "Auction is not currently active" },
+      ]);
     }
 
     // Get user
@@ -60,26 +53,19 @@ export async function POST(
       .single();
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("User");
     }
 
     // Check if user is restricted
     if (user.is_restricted) {
-      return NextResponse.json(
-        { error: "User is restricted from bidding" },
-        { status: 403 }
-      );
+      throw new AuthorizationError("User is restricted from bidding");
     }
 
     // Check if user is the creator
     if (auction.creator_id === user.id) {
-      return NextResponse.json(
-        { error: "Cannot bid on your own auction" },
-        { status: 400 }
-      );
+      throw new ValidationError("Cannot bid on your own auction", [
+        { field: "auction", message: "You cannot bid on your own auction" },
+      ]);
     }
 
     // Get current highest bid with bidder info for notification
@@ -95,21 +81,20 @@ export async function POST(
     const minimumBid = currentHighest + auction.min_bid_increment;
 
     if (amount < minimumBid) {
-      return NextResponse.json(
+      throw new ValidationError(`Bid must be at least ${minimumBid / 1e9} SOL`, [
         {
-          error: `Bid must be at least ${minimumBid / 1e9} SOL`,
+          field: "amount",
+          message: `Bid must be at least ${minimumBid / 1e9} SOL`,
         },
-        { status: 400 }
-      );
+      ]);
     }
 
     // Check wallet balance
     const walletBalance = await getWalletBalance(walletAddress);
     if (walletBalance < amount) {
-      return NextResponse.json(
-        { error: "Insufficient wallet balance" },
-        { status: 400 }
-      );
+      throw new ValidationError("Insufficient wallet balance", [
+        { field: "amount", message: "Insufficient wallet balance" },
+      ]);
     }
 
     // Get user's existing committed bids (top 3 in other auctions)
@@ -127,12 +112,14 @@ export async function POST(
 
     // Check if user has enough balance for this bid + committed
     if (walletBalance < amount + totalCommitted) {
-      return NextResponse.json(
-        {
-          error:
-            "Insufficient balance. You have funds committed to other auctions.",
-        },
-        { status: 400 }
+      throw new ValidationError(
+        "Insufficient balance. You have funds committed to other auctions.",
+        [
+          {
+            field: "amount",
+            message: "Insufficient balance due to committed bids",
+          },
+        ]
       );
     }
 
@@ -164,10 +151,6 @@ export async function POST(
 
     return NextResponse.json({ bid }, { status: 201 });
   } catch (error) {
-    console.error("Error placing bid:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

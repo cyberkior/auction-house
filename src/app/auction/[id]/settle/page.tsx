@@ -199,8 +199,10 @@ export default function SettlePage({ params }: PageProps) {
     }
   };
 
+  const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
+
   // Calculate time remaining
-  const getTimeRemaining = () => {
+  const getTimeRemaining = useCallback(() => {
     if (!settlement) return null;
     const deadline = new Date(settlement.payment_deadline);
     const now = new Date();
@@ -211,9 +213,7 @@ export default function SettlePage({ params }: PageProps) {
     const minutes = Math.floor(diff / (1000 * 60));
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
     return `${minutes}m ${seconds}s`;
-  };
-
-  const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
+  }, [settlement]);
 
   useEffect(() => {
     if (!settlement) return;
@@ -223,7 +223,7 @@ export default function SettlePage({ params }: PageProps) {
 
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, [settlement]);
+  }, [settlement, getTimeRemaining]);
 
   if (isLoading) {
     return (

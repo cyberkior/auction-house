@@ -3,18 +3,18 @@ import { PublicKey } from "@solana/web3.js";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
 import { createServerClient } from "@/lib/supabase/server";
+import { rateLimit, getRateLimitIdentifier } from "@/lib/rate-limit/limiter";
+import { handleApiError } from "@/lib/errors/handler";
+import { AuthenticationError } from "@/lib/errors/classes";
+import { validateBody } from "@/lib/validation/middleware";
+import { authSchema } from "@/lib/validation/schemas";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { walletAddress, signature, message } = body;
+    await rateLimit(getRateLimitIdentifier(request), "strict");
 
-    if (!walletAddress || !signature || !message) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const { walletAddress, signature, message } = validateBody(authSchema, body);
 
     // Verify the signature
     const publicKey = new PublicKey(walletAddress);
@@ -28,10 +28,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (!isValid) {
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 401 }
-      );
+      throw new AuthenticationError("Invalid signature");
     }
 
     // Verify message format (prevent replay attacks with timestamp)
@@ -46,10 +43,7 @@ export async function POST(request: NextRequest) {
       const fiveMinutes = 5 * 60 * 1000;
 
       if (Math.abs(now - timestamp) > fiveMinutes) {
-        return NextResponse.json(
-          { error: "Message expired" },
-          { status: 401 }
-        );
+        throw new AuthenticationError("Message expired");
       }
     }
 
@@ -78,10 +72,6 @@ export async function POST(request: NextRequest) {
       sessionToken,
     });
   } catch (error) {
-    console.error("Auth error:", error);
-    return NextResponse.json(
-      { error: "Authentication failed" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

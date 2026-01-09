@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { rateLimit, getRateLimitIdentifier } from "@/lib/rate-limit/limiter";
+import { handleApiError } from "@/lib/errors/handler";
+import { NotFoundError, ValidationError } from "@/lib/errors/classes";
 
 // GET /api/notifications - Get user's notifications
 export async function GET(request: NextRequest) {
   try {
+    await rateLimit(getRateLimitIdentifier(request), "lenient");
+
     const searchParams = request.nextUrl.searchParams;
     const walletAddress = searchParams.get("wallet");
     const limit = parseInt(searchParams.get("limit") || "20");
@@ -11,10 +16,9 @@ export async function GET(request: NextRequest) {
     const unreadOnly = searchParams.get("unread") === "true";
 
     if (!walletAddress) {
-      return NextResponse.json(
-        { error: "Wallet address required" },
-        { status: 400 }
-      );
+      throw new ValidationError("Wallet address required", [
+        { field: "wallet", message: "Wallet address is required" },
+      ]);
     }
 
     const supabase = createServerClient();
@@ -27,10 +31,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("User");
     }
 
     // Get notifications
@@ -70,24 +71,22 @@ export async function GET(request: NextRequest) {
       unreadCount: unreadCount || 0,
     });
   } catch (error) {
-    console.error("Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
 // PATCH /api/notifications - Mark notifications as read
 export async function PATCH(request: NextRequest) {
   try {
-    const { walletAddress, notificationIds, markAllRead } = await request.json();
+    await rateLimit(getRateLimitIdentifier(request), "moderate");
+
+    const body = await request.json();
+    const { walletAddress, notificationIds, markAllRead } = body;
 
     if (!walletAddress) {
-      return NextResponse.json(
-        { error: "Wallet address required" },
-        { status: 400 }
-      );
+      throw new ValidationError("Wallet address required", [
+        { field: "walletAddress", message: "Wallet address is required" },
+      ]);
     }
 
     const supabase = createServerClient();
@@ -100,10 +99,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("User");
     }
 
     // Update notifications
@@ -128,10 +124,6 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

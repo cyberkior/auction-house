@@ -7,18 +7,21 @@ import type { User } from "@/types";
 const AUTH_MESSAGE_PREFIX = "Sign in to Art Auction";
 
 export function useAuth() {
-  // Check for test mode override (E2E tests)
-  if (typeof window !== "undefined" && (window as any).__AUTH_OVERRIDE__) {
-    return (window as any).__AUTH_OVERRIDE__;
-  }
-
   const { publicKey, signMessage, connected, disconnect } = useWallet();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
 
+  // Check for test mode override (E2E tests)
+  const isTestMode =
+    typeof window !== "undefined" &&
+    // eslint-disable-next-line
+    (window as any).__AUTH_OVERRIDE__ !== undefined;
+
   // Check for existing session on mount
   useEffect(() => {
+    if (isTestMode) return;
+
     const storedToken = localStorage.getItem("sessionToken");
     const storedUser = localStorage.getItem("user");
     const storedWallet = localStorage.getItem("walletAddress");
@@ -32,10 +35,12 @@ export function useAuth() {
       setSessionToken(storedToken);
       setUser(JSON.parse(storedUser));
     }
-  }, [publicKey]);
+  }, [publicKey, isTestMode]);
 
   // Clear session when wallet disconnects
   useEffect(() => {
+    if (isTestMode) return;
+
     if (!connected) {
       setUser(null);
       setSessionToken(null);
@@ -43,7 +48,7 @@ export function useAuth() {
       localStorage.removeItem("user");
       localStorage.removeItem("walletAddress");
     }
-  }, [connected]);
+  }, [connected, isTestMode]);
 
   const signIn = useCallback(async () => {
     if (!publicKey || !signMessage) {
@@ -103,6 +108,12 @@ export function useAuth() {
     localStorage.removeItem("walletAddress");
     await disconnect();
   }, [disconnect]);
+
+  // Return test override if in test mode
+  if (isTestMode) {
+    // eslint-disable-next-line
+    return (window as any).__AUTH_OVERRIDE__;
+  }
 
   return {
     user,
