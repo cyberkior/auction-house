@@ -29,7 +29,7 @@ export function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
-            <NavLink href="/">Explore</NavLink>
+            <NavLink href="/#explore">Explore</NavLink>
             {connected && (
               <>
                 <NavLink href="/create">Create</NavLink>
