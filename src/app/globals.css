@@ -1,0 +1,301 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Typography - Modern Geometric: Outfit for display, Manrope for body */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Warm Earth Tones - Light mode with organic feel */
+  --bg-primary: #faf8f5;
+  --bg-secondary: #f3efe9;
+  --bg-elevated: #ffffff;
+  --bg-card: #ffffff;
+
+  /* Terracotta accent */
+  --accent: #c4704b;
+  --accent-hover: #b5613c;
+  --accent-muted: rgba(196, 112, 75, 0.12);
+
+  /* Olive secondary */
+  --olive: #6b7c5e;
+  --olive-muted: rgba(107, 124, 94, 0.12);
+
+  /* Sand/warm neutrals for text */
+  --text-primary: #2d2a26;
+  --text-secondary: #5c5650;
+  --text-muted: #8a847c;
+
+  /* Status colors - warmer tones */
+  --status-live: #5a9a6b;
+  --status-upcoming: #6b8cae;
+  --status-ended: #8a847c;
+  --status-settling: #c9a855;
+  --status-sold: #9b7bb8;
+  --status-failed: #c75d5d;
+
+  /* Borders - warm browns */
+  --border-subtle: rgba(45, 42, 38, 0.06);
+  --border-default: rgba(45, 42, 38, 0.12);
+  --border-hover: rgba(45, 42, 38, 0.2);
+
+  /* Shadows - warmer */
+  --shadow-card: 0 2px 16px -2px rgba(45, 42, 38, 0.08);
+  --shadow-elevated: 0 8px 32px -4px rgba(45, 42, 38, 0.12);
+
+  /* Spacing rhythm */
+  --space-unit: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Manrope', system-ui, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle paper texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.4;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/* Modern geometric display headings */
+.font-display {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Selection styling */
+::selection {
+  background: var(--accent);
+  color: white;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* Hide scrollbar for horizontal scroll sections */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Gradient text utility - terracotta to olive */
+.text-gradient {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--olive) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Shimmer animation for skeletons */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 0%,
+    var(--bg-elevated) 50%,
+    var(--bg-secondary) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Pulse glow for live indicators */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(90, 154, 107, 0.5);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 4px rgba(90, 154, 107, 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Fade in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+/* Stagger children animation */
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+
+/* Card hover lift */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Image zoom on hover */
+.img-zoom {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.group:hover .img-zoom {
+  transform: scale(1.05);
+}
+
+/* Solana wallet adapter styles override */
+.wallet-adapter-button {
+  background: var(--accent) !important;
+  border-radius: 12px !important;
+  font-family: 'Outfit', system-ui, sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  padding: 12px 24px !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
+}
+
+.wallet-adapter-button:hover {
+  background: var(--accent-hover) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(196, 112, 75, 0.25) !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  font-family: 'Manrope', system-ui, sans-serif !important;
+  background: rgba(45, 42, 38, 0.6) !important;
+}
+
+.wallet-adapter-modal-container {
+  background: var(--bg-elevated) !important;
+  border-radius: 20px !important;
+}
+
+.wallet-adapter-modal-title {
+  color: var(--text-primary) !important;
+  font-family: 'Outfit', system-ui, sans-serif !important;
+}
+
+.wallet-adapter-modal-list li {
+  background: var(--bg-secondary) !important;
+  border-radius: 12px !important;
+}
+
+.wallet-adapter-modal-list li:hover {
+  background: var(--bg-primary) !important;
+}
+
+/* Focus states */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Utility: glass effect - warm tint */
+.glass {
+  background: rgba(250, 248, 245, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Utility: border glow on hover */
+.border-glow {
+  position: relative;
+}
+
+.border-glow::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent 0%, var(--accent) 50%, transparent 100%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.border-glow:hover::after {
+  opacity: 1;
+}
+
+/* Organic shape decorations */
+.blob {
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+}

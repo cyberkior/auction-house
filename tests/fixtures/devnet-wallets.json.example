@@ -1,0 +1,15 @@
+{
+  "_comment": "Copy to devnet-wallets.json and fill in real devnet keypairs",
+  "winner": {
+    "publicKey": "YOUR_DEVNET_WALLET_1_PUBLIC_KEY",
+    "secretKey": "YOUR_DEVNET_WALLET_1_SECRET_KEY_BASE58"
+  },
+  "creator": {
+    "publicKey": "YOUR_DEVNET_WALLET_2_PUBLIC_KEY",
+    "secretKey": "YOUR_DEVNET_WALLET_2_SECRET_KEY_BASE58"
+  },
+  "bidder2": {
+    "publicKey": "YOUR_DEVNET_WALLET_3_PUBLIC_KEY",
+    "secretKey": "YOUR_DEVNET_WALLET_3_SECRET_KEY_BASE58"
+  }
+}
