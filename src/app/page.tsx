@@ -80,12 +80,18 @@ function HomeContent() {
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4">
-              <button className="px-8 py-4 bg-accent text-white font-semibold rounded-button hover:bg-accent-hover transition-all hover:-translate-y-0.5 hover:shadow-lg">
+              <a
+                href="#explore"
+                className="px-8 py-4 bg-accent text-white font-semibold rounded-button hover:bg-accent-hover transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              >
                 Explore Auctions
-              </button>
-              <button className="px-8 py-4 bg-bg-elevated text-text-primary font-semibold rounded-button border border-border-default hover:border-accent hover:bg-accent-muted transition-all">
-                Learn More
-              </button>
+              </a>
+              <a
+                href="/create"
+                className="px-8 py-4 bg-bg-elevated text-text-primary font-semibold rounded-button border border-border-default hover:border-accent hover:bg-accent-muted transition-all"
+              >
+                Create Auction
+              </a>
             </div>
           </div>
 
@@ -142,7 +148,7 @@ function HomeContent() {
       </section>
 
       {/* Explore Section */}
-      <section className="bg-bg-secondary py-20">
+      <section id="explore" className="bg-bg-secondary py-20 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-6">
             <div>

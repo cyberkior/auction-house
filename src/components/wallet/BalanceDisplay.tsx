@@ -8,6 +8,7 @@ export function BalanceDisplay() {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
   const [balance, setBalance] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!publicKey) {
@@ -15,39 +16,56 @@ export function BalanceDisplay() {
       return;
     }
 
+    let isMounted = true;
+    let subscriptionId: number | undefined;
+
     const fetchBalance = async () => {
+      setIsLoading(true);
       try {
         const bal = await connection.getBalance(publicKey);
-        setBalance(bal / LAMPORTS_PER_SOL);
+        if (isMounted) {
+          setBalance(bal / LAMPORTS_PER_SOL);
+        }
       } catch (error) {
         console.error("Failed to fetch balance:", error);
-        setBalance(null);
+        if (isMounted) {
+          setBalance(0); // Show 0 on error rather than hiding
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchBalance();
 
     // Subscribe to balance changes
-    const subscriptionId = connection.onAccountChange(publicKey, (account) => {
-      setBalance(account.lamports / LAMPORTS_PER_SOL);
-    });
+    try {
+      subscriptionId = connection.onAccountChange(publicKey, (account) => {
+        if (isMounted) {
+          setBalance(account.lamports / LAMPORTS_PER_SOL);
+        }
+      });
+    } catch (error) {
+      console.error("Failed to subscribe to balance changes:", error);
+    }
 
     return () => {
-      connection.removeAccountChangeListener(subscriptionId);
+      isMounted = false;
+      if (subscriptionId !== undefined) {
+        connection.removeAccountChangeListener(subscriptionId).catch(() => {});
+      }
     };
   }, [connection, publicKey]);
 
-  if (balance === null) return null;
+  if (!publicKey) return null;
 
   return (
     <div className="flex items-center gap-2 px-4 py-2 bg-bg-elevated rounded-button border border-border-subtle shadow-sm">
-      <div className="w-5 h-5 rounded-full bg-olive-muted flex items-center justify-center">
-        <svg className="w-3 h-3 text-olive" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="12" cy="12" r="10" />
-        </svg>
-      </div>
+      <div className="w-2 h-2 rounded-full bg-olive" />
       <span className="text-sm font-semibold text-text-primary">
-        {balance.toFixed(2)}
+        {isLoading ? "..." : (balance ?? 0).toFixed(2)}
       </span>
       <span className="text-xs text-text-muted font-medium">SOL</span>
     </div>
