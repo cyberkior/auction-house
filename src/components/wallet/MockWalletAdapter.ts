@@ -1,15 +1,21 @@
 import { PublicKey, Transaction } from "@solana/web3.js";
-import { BaseMessageSignerWalletAdapter } from "@solana/wallet-adapter-base";
+import {
+  BaseMessageSignerWalletAdapter,
+  WalletReadyState,
+  type WalletName
+} from "@solana/wallet-adapter-base";
 
 /**
  * Mock wallet adapter for E2E testing.
  * Reads from window.__WALLET_ADAPTER_OVERRIDE__ if available.
  */
 export class MockWalletAdapter extends BaseMessageSignerWalletAdapter {
-  name = "Mock Wallet";
+  name = "Mock Wallet" as WalletName<"Mock Wallet">;
   url = "https://mock-wallet.test";
   icon = "";
   readonly supportedTransactionVersions = null;
+  readyState = WalletReadyState.Installed;
+  connecting = false;
 
   private _publicKey: PublicKey | null = null;
   private _connected = false;
