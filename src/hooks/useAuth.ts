@@ -7,6 +7,11 @@ import type { User } from "@/types";
 const AUTH_MESSAGE_PREFIX = "Sign in to Art Auction";
 
 export function useAuth() {
+  // Check for test mode override (E2E tests)
+  if (typeof window !== "undefined" && (window as any).__AUTH_OVERRIDE__) {
+    return (window as any).__AUTH_OVERRIDE__;
+  }
+
   const { publicKey, signMessage, connected, disconnect } = useWallet();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);

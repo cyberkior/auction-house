@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createMockWalletScript, TEST_WALLETS } from "../mocks/wallet";
+import { createMockAuthScript } from "../mocks/auth";
 import {
   mockSettlementAPIs,
   mockSuccessfulPaymentVerification,
@@ -16,6 +17,11 @@ test.describe("Settlement Flow", () => {
     // Inject mock wallet as winner
     await page.addInitScript(
       createMockWalletScript({ publicKey: TEST_WALLETS.winner })
+    );
+
+    // Inject mock auth
+    await page.addInitScript(
+      createMockAuthScript(TEST_WALLETS.winner)
     );
 
     // Mock API responses
@@ -51,6 +57,11 @@ test.describe("Settlement Flow", () => {
       createMockWalletScript({ publicKey: TEST_WALLETS.winner })
     );
 
+    // Inject mock auth
+    await page.addInitScript(
+      createMockAuthScript(TEST_WALLETS.winner)
+    );
+
     // Mock API with expired settlement
     await mockSettlementAPIs(page, expiredSettlement);
 
@@ -74,6 +85,11 @@ test.describe("Settlement Flow", () => {
     // Inject mock wallet as 2nd place bidder
     await page.addInitScript(
       createMockWalletScript({ publicKey: TEST_WALLETS.bidder2 })
+    );
+
+    // Inject mock auth
+    await page.addInitScript(
+      createMockAuthScript(TEST_WALLETS.bidder2)
     );
 
     // Mock API with cascade settlement
