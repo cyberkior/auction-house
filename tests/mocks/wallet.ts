@@ -6,7 +6,7 @@ export interface MockWalletConfig {
 }
 
 /**
- * Injects a mock wallet adapter into the browser context.
+ * Injects a mock wallet adapter and connection into the browser context.
  * Call this via page.addInitScript() before navigating.
  */
 export function createMockWalletScript(config: MockWalletConfig): string {
@@ -31,6 +31,21 @@ export function createMockWalletScript(config: MockWalletConfig): string {
       signMessage: async (message) => {
         return new Uint8Array(64).fill(1);
       },
+    };
+
+    // Override Solana connection
+    window.__CONNECTION_OVERRIDE__ = {
+      getLatestBlockhash: async () => ({
+        blockhash: "MockBlockhash111111111111111111111111111",
+        lastValidBlockHeight: 12345,
+      }),
+      sendRawTransaction: async (tx) => {
+        // Return mock transaction signature
+        return "MockTxSignature1111111111111111111111111111111111111111111111111";
+      },
+      confirmTransaction: async () => ({
+        value: { err: null },
+      }),
     };
   `;
 }

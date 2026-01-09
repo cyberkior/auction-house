@@ -53,8 +53,13 @@ interface PageProps {
 
 export default function SettlePage({ params }: PageProps) {
   const { publicKey, signTransaction } = useWallet();
-  const { connection } = useConnection();
+  const { connection: rawConnection } = useConnection();
   const { user, isAuthenticated, signIn, isAuthenticating } = useAuth();
+
+  // Use mock connection in test mode
+  const connection = typeof window !== "undefined" && (window as any).__CONNECTION_OVERRIDE__
+    ? (window as any).__CONNECTION_OVERRIDE__
+    : rawConnection;
 
   const [settlement, setSettlement] = useState<Settlement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
