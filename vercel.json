@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/update-statuses",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/settlements/cascade",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
