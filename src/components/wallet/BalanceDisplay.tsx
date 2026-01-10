@@ -44,7 +44,9 @@ export function BalanceDisplay() {
     try {
       subscriptionId = connection.onAccountChange(publicKey, (account) => {
         if (isMounted) {
-          setBalance(account.lamports / LAMPORTS_PER_SOL);
+          const newBalance = account.lamports / LAMPORTS_PER_SOL;
+          // Only update if balance actually changed to prevent re-render loops
+          setBalance((prev) => (prev === newBalance ? prev : newBalance));
         }
       });
     } catch (error) {

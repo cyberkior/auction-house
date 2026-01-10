@@ -43,7 +43,8 @@ export function useBalance(): UseBalanceReturn {
 
     // Subscribe to balance changes
     const subscriptionId = connection.onAccountChange(publicKey, (account) => {
-      setBalance(account.lamports);
+      // Only update if balance actually changed to prevent re-render loops
+      setBalance((prev) => (prev === account.lamports ? prev : account.lamports));
     });
 
     return () => {
