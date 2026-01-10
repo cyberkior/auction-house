@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { formatTimeRemaining } from "@/lib/utils/time";
 
 interface CountdownTimerProps {
@@ -14,34 +14,42 @@ export function CountdownTimer({
   className = "",
   onEnd,
 }: CountdownTimerProps) {
-  const [timeLeft, setTimeLeft] = useState(formatTimeRemaining(endTime));
+  // Initialize with empty string to avoid hydration mismatch (server/client time differs)
+  const [timeLeft, setTimeLeft] = useState("");
   const [isEnded, setIsEnded] = useState(false);
+  const [isUrgent, setIsUrgent] = useState(false);
+  const hasEndedRef = useRef(false);
 
   useEffect(() => {
+    // Set initial value on client
+    setTimeLeft(formatTimeRemaining(endTime));
+    hasEndedRef.current = false; // Reset when endTime changes
+
     const timer = setInterval(() => {
       const remaining = formatTimeRemaining(endTime);
       setTimeLeft(remaining);
 
-      if (remaining === "Ended" && !isEnded) {
+      // Check urgency
+      const end = new Date(endTime);
+      const now = new Date();
+      const diff = end.getTime() - now.getTime();
+      setIsUrgent(diff > 0 && diff < 5 * 60 * 1000);
+
+      if (remaining === "Ended" && !hasEndedRef.current) {
+        hasEndedRef.current = true;
         setIsEnded(true);
         onEnd?.();
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [endTime, isEnded, onEnd]);
-
-  // Determine urgency for styling
-  const end = new Date(endTime);
-  const now = new Date();
-  const diff = end.getTime() - now.getTime();
-  const isUrgent = diff > 0 && diff < 5 * 60 * 1000; // Less than 5 minutes
+  }, [endTime, onEnd]);
 
   return (
     <span
       className={`font-mono ${isUrgent ? "text-red-600" : ""} ${className}`}
     >
-      {timeLeft}
+      {timeLeft || "--:--"}
     </span>
   );
 }
