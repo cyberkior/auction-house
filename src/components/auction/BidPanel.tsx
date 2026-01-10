@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { Auction, Bid } from "@/types";
 import { formatSol, formatNumber } from "@/lib/utils/format";
@@ -9,6 +9,28 @@ import { useBalance } from "@/hooks/useBalance";
 import { useAuth } from "@/hooks/useAuth";
 import { CountdownTimer } from "./CountdownTimer";
 import { AuctionStatusBadge } from "./AuctionStatus";
+import { formatTimeRemaining } from "@/lib/utils/time";
+
+// Countdown for upcoming auctions - shows "Starting soon" instead of "Ended"
+function StartCountdown({ startTime }: { startTime: string }) {
+  const [timeLeft, setTimeLeft] = useState(formatTimeRemaining(startTime));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const remaining = formatTimeRemaining(startTime);
+      setTimeLeft(remaining === "Ended" ? "Starting soon" : remaining);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [startTime]);
+
+  const isStartingSoon = timeLeft === "Starting soon";
+
+  return (
+    <span className={`text-xl font-bold font-mono ${isStartingSoon ? "text-green-600" : ""}`}>
+      {timeLeft}
+    </span>
+  );
+}
 
 interface BidPanelProps {
   auction: Auction;
@@ -108,10 +130,7 @@ export function BidPanel({ auction, highestBid, onBidPlaced }: BidPanelProps) {
         {auction.status === "upcoming" && (
           <div className="text-right">
             <p className="text-xs text-gray-500 mb-1">Starts in</p>
-            <CountdownTimer
-              endTime={auction.start_time}
-              className="text-xl font-bold"
-            />
+            <StartCountdown startTime={auction.start_time} />
           </div>
         )}
       </div>
